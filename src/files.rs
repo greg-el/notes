@@ -1,15 +1,11 @@
 use std::{
-    fs::{self, read_dir, File},
-    io::{self, BufRead},
+    fs::{read_dir, File},
+    io::{Result, Lines, BufRead, BufReader},
     path::Path,
 };
 
-use tui::{
-    style::{Color, Modifier, Style},
-    text::Span,
-    widgets::{List, ListItem},
-};
-
+// Get a list of the files in the notes directory,
+// used to populate the left side of the notes UI
 pub fn get_directory_files(dir: &str) -> Vec<String> {
     let paths = read_dir(dir).unwrap();
 
@@ -25,33 +21,20 @@ pub fn get_directory_files(dir: &str) -> Vec<String> {
         .collect()
 }
 
-pub fn read_file_contents(path: &str) -> Result<String, std::io::Error> {
-    fs::read_to_string(path)
-}
 
-pub fn parse_notes_file(path: &str) -> Vec<ListItem> {
+pub fn parse_notes_file(path: &str) -> Vec<String> {
     if let Ok(lines) = read_lines(path) {
-        lines
-            .flatten()
-            .map(|line| ListItem::new(line.clone()).style(style_line(line)))
-            .collect()
+        lines.flatten().map(|line| line.clone()).collect()
     } else {
         Vec::new()
     }
 }
 
-fn style_line(line: String) -> Style {
-    match line.chars().next() {
-        Some('~') => Style::default().add_modifier(Modifier::CROSSED_OUT),
-        Some('*') => Style::default().add_modifier(Modifier::BOLD),
-        _ => Style::default(),
-    }
-}
 
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+fn read_lines<P>(filename: P) -> Result<Lines<BufReader<File>>>
 where
     P: AsRef<Path>,
 {
     let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
+    Ok(BufReader::new(file).lines())
 }
