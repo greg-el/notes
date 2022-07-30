@@ -9,7 +9,7 @@ use crossterm::{
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style},
+    style::{Color, Style, Modifier},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Frame, Terminal,
 };
@@ -44,6 +44,7 @@ pub fn main_app<B>(f: &mut Frame<B>, app: &mut App)
 where
     B: Backend,
 {
+    // Defines the left and right blocks
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .margin(1)
@@ -51,10 +52,10 @@ where
         .split(f.size());
 
     let items: Vec<ListItem> = app
-        .items
+        .files
         .items
         .iter()
-        .map(|elem| ListItem::new(*elem))
+        .map(|elem| ListItem::new(elem.clone()))
         .collect();
 
     let items = List::new(items)
@@ -65,39 +66,79 @@ where
                 .fg(Color::Black),
         );
 
-    let content = Paragraph::new(app.select_item_content.clone())
-        .block(Block::default().title("Content").borders(Borders::ALL));
 
-    f.render_stateful_widget(items, chunks[0], &mut app.items.state);
-    f.render_widget(content, chunks[1]);
+    let content: Vec<ListItem> = app
+        .content
+        .iter()
+        .map(|elem| style_line(elem.to_string()))
+        .collect();
+
+    
+    let content = List::new(content)
+        .block(Block::default().title("List").borders(Borders::ALL))
+        .highlight_style(
+            Style::default()
+                .bg(Color::Rgb(52, 235, 174))
+                .fg(Color::Black),
+        );
+
+
+    f.render_stateful_widget(items, chunks[0], &mut app.files.state);
+    f.render_stateful_widget(content, chunks[1], &mut app.content_state.state);
 }
 
-pub struct StatefulList<T> {
-    state: ListState,
-    items: Vec<T>,
-}
 
-impl<'a, T> StatefulList<T>
-where
-    &'a str: From<T>,
-    T: Clone,
-    T: Copy,
-{
-    pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        // TODO: this is probably a bad idea in case there aren't any files
-        // in the chosen directory
-        let mut tmp_state = ListState::default();
-        tmp_state.select(Some(0));
-        StatefulList {
-            state: tmp_state,
-            items,
+fn style_line(line: String) -> ListItem<'static> {
+    match line.chars().next() {
+        Some('~') => {
+            ListItem::new(drop_first(line))
+                .style(Style::default().add_modifier(Modifier::CROSSED_OUT)).clone()
         }
+
+        Some('*') => {
+            ListItem::new(drop_first(line))
+                .style(Style::default().add_modifier(Modifier::BOLD)).clone()
+        }
+
+        _ => ListItem::new(line)
+                .style(Style::default()).clone()
+    }
+}
+
+fn drop_first(s: String) -> String {
+    let mut drop_styling = s.chars();
+    drop_styling.next();
+    drop_styling.as_str().to_string()
+}
+
+#[derive(Clone)]
+pub struct StatefulList {
+    state: ListState,
+    items: Vec<String>,
+}
+
+impl StatefulList {
+    pub fn set_items(&mut self, items: Vec<String>) {
+        self.items = items;
+        self.state = ListState::default();
     }
 
-    pub fn get_current(&mut self) -> T {
+    pub fn new(items: Vec<String>, set_first: bool) -> StatefulList {
+        // TODO: this is probably a bad idea in case there aren't any files
+        // in the chosen directory
+        let mut state = ListState::default();
+
+        if set_first {
+            state.select(Some(0));
+        }
+
+        StatefulList { state, items }
+    }
+
+    pub fn get_current(&mut self) -> String {
         match self.state.selected() {
-            Some(i) => self.items[i],
-            None => self.items[0],
+            Some(i) => self.items[i].clone(),
+            None => self.items[0].clone(),
         }
     }
 
@@ -127,5 +168,9 @@ where
             None => 0,
         };
         self.state.select(Some(i));
+    }
+
+    pub fn unselect(&mut self) {
+        self.state.select(None);
     }
 }
