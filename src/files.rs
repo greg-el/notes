@@ -1,6 +1,6 @@
 use std::{
     fs::{read_dir, File},
-    io::{Result, Lines, BufRead, BufReader},
+    io::{BufRead, BufReader, Lines, Result, Write},
     path::Path,
 };
 
@@ -21,7 +21,6 @@ pub fn get_directory_files(dir: &str) -> Vec<String> {
         .collect()
 }
 
-
 pub fn parse_notes_file(path: &str) -> Vec<String> {
     if let Ok(lines) = read_lines(path) {
         lines.flatten().map(|line| line.clone()).collect()
@@ -30,11 +29,26 @@ pub fn parse_notes_file(path: &str) -> Vec<String> {
     }
 }
 
-
 fn read_lines<P>(filename: P) -> Result<Lines<BufReader<File>>>
 where
     P: AsRef<Path>,
 {
     let file = File::open(filename)?;
     Ok(BufReader::new(file).lines())
+}
+
+// Append a line to a notes file
+pub fn edit_note(path: &str, line: &str, line_number: usize) {
+    // Get the file as  a vector of lines
+    let mut lines = parse_notes_file(path);
+
+    // Replace the line at the given index with the new line
+    lines[line_number] = line.to_string();
+
+    // Write the new vector of lines to the file
+    let mut file = File::create(path).unwrap();
+    for line in lines {
+        file.write_all(line.as_bytes()).unwrap();
+        file.write_all(b"\n").unwrap();
+    }
 }

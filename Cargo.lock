@@ -94,6 +94,7 @@ version = "0.1.0"
 dependencies = [
  "crossterm",
  "tui",
+ "tui-input",
 ]
 
 [[package]]
@@ -181,6 +182,15 @@ dependencies = [
  "crossterm",
  "unicode-segmentation",
  "unicode-width",
+]
+
+[[package]]
+name = "tui-input"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7b243fc45f29d5de2116c6bdf05b3ba2f0aec9e14b0508f9866ad004bffa3f8"
+dependencies = [
+ "crossterm",
 ]
 
 [[package]]
