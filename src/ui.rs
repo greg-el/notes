@@ -14,7 +14,7 @@ use tui::{
     Frame, Terminal,
 };
 
-use crate::{App, InputMode};
+use crate::{App, InputMode, Window};
 
 pub fn setup() -> Result<Terminal<CrosstermBackend<Stdout>>, io::Error> {
     let mut stdout = io::stdout();
@@ -51,27 +51,47 @@ where
         .map(|elem| ListItem::new(elem.clone()))
         .collect();
 
-    let items = List::new(items)
-        .block(Block::default().title("List").borders(Borders::ALL))
-        .highlight_style(
-            Style::default()
-                .bg(Color::Rgb(52, 235, 174))
-                .fg(Color::Black),
-        );
-
     let content: Vec<ListItem> = app
         .content
         .iter()
         .map(|elem| style_line(elem.to_string()))
         .collect();
 
-    let content = List::new(content)
-        .block(Block::default().title("List").borders(Borders::ALL))
-        .highlight_style(
-            Style::default()
-                .bg(Color::Rgb(52, 235, 174))
-                .fg(Color::Black),
-        );
+    // Allows for styling the currently selected notes file (on the left) differently when editing it
+    let (items, content) = match app.focused_window {
+        Window::FileList => (
+            // Filelist styling
+            List::new(items)
+                .block(Block::default().title("List").borders(Borders::ALL))
+                .highlight_style(
+                    Style::default()
+                        .bg(Color::Rgb(52, 235, 174))
+                        .fg(Color::Black),
+                ),
+            // Content styling
+            List::new(content)
+                .block(Block::default().title("List").borders(Borders::ALL))
+                .highlight_style(
+                    Style::default()
+                        .bg(Color::Rgb(52, 235, 174))
+                        .fg(Color::Black),
+                ),
+        ),
+        Window::Content => (
+            // Filelist styling
+            List::new(items)
+                .block(Block::default().title("List").borders(Borders::ALL))
+                .highlight_style(Style::default().bg(Color::Rgb(20, 20, 20)).fg(Color::Black)),
+            // Content styling
+            List::new(content)
+                .block(Block::default().title("List").borders(Borders::ALL))
+                .highlight_style(
+                    Style::default()
+                        .bg(Color::Rgb(52, 235, 174))
+                        .fg(Color::Black),
+                ),
+        ),
+    };
 
     match app.input_mode {
         InputMode::Normal => {
